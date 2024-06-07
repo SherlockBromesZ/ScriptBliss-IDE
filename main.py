@@ -3,10 +3,37 @@ import os
 import subprocess
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QAction, QFileDialog, QMessageBox, QLabel,
                              QTextEdit, QVBoxLayout, QWidget, QSplitter, QTreeView, QFileSystemModel, QInputDialog, QTabWidget)
-from PyQt5.QtGui import QIcon, QColor, QPalette, QFont, QBrush, QFontMetrics, QPixmap,QDesktopServices
+from PyQt5.QtGui import QIcon, QColor, QPalette, QFont, QBrush, QFontMetrics, QPixmap, QDesktopServices
 from PyQt5.QtCore import Qt, QDir, QProcess, QModelIndex, QTimer, QUrl
 from PyQt5.Qsci import (QsciScintilla, QsciLexerPython, QsciLexerJava, QsciLexerHTML, QsciLexerJavaScript,
                         QsciLexerCSS, QsciLexerCPP, QsciLexerRuby)
+
+class CustomFileSystemModel(QFileSystemModel):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.icon_map = {
+            '.cpp': QIcon('cpp.png'),
+            '.css': QIcon('css.png'),
+            '.java': QIcon('java.png'),
+            '.php': QIcon('php.png'),
+            '.html': QIcon('html.png'),
+            '.js': QIcon('javascript.png'),
+            '.png': QIcon('image.png'),
+            '.jpg': QIcon('image.png'),
+            '.jpeg': QIcon('image.png'),
+            '.bmp': QIcon('image.png'),
+            '.gif': QIcon('image.png'),
+            '.py': QIcon('python.png'),
+            '.rb': QIcon('ruby.png')
+        }
+
+    def data(self, index, role):
+        if role == Qt.DecorationRole and index.column() == 0:
+            file_path = self.filePath(index)
+            _, ext = os.path.splitext(file_path)
+            if ext in self.icon_map:
+                return self.icon_map[ext]
+        return super().data(index, role)
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -73,7 +100,7 @@ class MainWindow(QMainWindow):
         self.editor.setLexer(lexer)
 
         # Explorer setup
-        self.fileSystemModel = QFileSystemModel()
+        self.fileSystemModel = CustomFileSystemModel()
         self.fileSystemModel.setRootPath(self.projectPath)
 
         self.treeView = QTreeView()
