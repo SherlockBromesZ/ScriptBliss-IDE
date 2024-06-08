@@ -1,10 +1,11 @@
 import sys
 import os
 import subprocess
-from PyQt5.QtWidgets import (QMainWindow, QApplication, QAction, QFileDialog, QMessageBox, QLabel,
-                             QTextEdit, QVBoxLayout, QWidget, QSplitter, QTreeView, QFileSystemModel, QInputDialog, QTabWidget, QMenu)
-from PyQt5.QtGui import QIcon, QColor, QPalette, QFont, QFontMetrics, QPixmap, QDesktopServices
-from PyQt5.QtCore import Qt, QDir, QProcess, QModelIndex, QTimer, QUrl, QPoint
+import webbrowser
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QTreeView, QFileSystemModel, QSplitter, QTextEdit,
+                             QTabWidget, QMenu, QAction, QInputDialog, QMessageBox, QLabel, QFileDialog, QVBoxLayout, QWidget)
+from PyQt5.QtGui import (QIcon, QColor, QPalette, QFont, QFontMetrics, QPixmap, QDesktopServices)
+from PyQt5.QtCore import (Qt, QDir, QProcess, QTimer, QUrl, QPoint)
 from PyQt5.Qsci import (QsciScintilla, QsciLexerPython, QsciLexerJava, QsciLexerHTML, QsciLexerJavaScript,
                         QsciLexerCSS, QsciLexerCPP, QsciLexerRuby)
 
@@ -51,7 +52,6 @@ class MainWindow(QMainWindow):
         self.setGeometry(100, 100, 1200, 800)
         self.showMaximized()
 
-        # Set dark blue theme similar to VSCode
         dark_palette = QPalette()
         dark_palette.setColor(QPalette.Window, QColor(30, 30, 60))
         dark_palette.setColor(QPalette.WindowText, QColor("#e0e0ff"))
@@ -68,20 +68,17 @@ class MainWindow(QMainWindow):
         dark_palette.setColor(QPalette.HighlightedText, Qt.black)
         self.setPalette(dark_palette)
 
-        # Editor setup
         self.editor = QsciScintilla()
-        self.editor.setUtf8(True)
+        self.editor.setUtf8(True)  # Ensure the editor is in UTF-8 mode
         self.editor.setCaretForegroundColor(QColor("#00091a"))
 
-        # Font
         font = QFont()
-        font.setFamily('Consolas')
+        font.setFamily('Consolas')  # This font is good for a wide range of UTF-8 characters
         font.setFixedPitch(True)
         font.setPointSize(10)
         self.editor.setFont(font)
         self.editor.setMarginsFont(font)
 
-        # Margin 0 is used for line numbers
         fontmetrics = QFontMetrics(font)
         self.editor.setMarginsFont(font)
         self.editor.setMarginWidth(0, fontmetrics.width("00000") + 6)
@@ -89,19 +86,14 @@ class MainWindow(QMainWindow):
         self.editor.setMarginsBackgroundColor(QColor("#1e1e3e"))
         self.editor.setMarginsForegroundColor(QColor("#ffffff"))
 
-        # Brace matching: enable for a LISP-like experience
         self.editor.setBraceMatching(QsciScintilla.SloppyBraceMatch)
-
-        # Current line visible with special background color
         self.editor.setCaretLineVisible(True)
         self.editor.setCaretLineBackgroundColor(QColor("#dee8ff"))
 
-        # Set Python lexer as default
         lexer = QsciLexerPython()
         lexer.setDefaultFont(font)
         self.editor.setLexer(lexer)
 
-        # Explorer setup
         self.fileSystemModel = CustomFileSystemModel()
         self.fileSystemModel.setRootPath(self.projectPath)
 
@@ -114,29 +106,24 @@ class MainWindow(QMainWindow):
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.showContextMenu)
 
-        # Mostrar apenas a coluna do nome do arquivo
-        self.treeView.setColumnHidden(1, True)  # Oculta a coluna de tamanho
-        self.treeView.setColumnHidden(2, True)  # Oculta a coluna de tipo
-        self.treeView.setColumnHidden(3, True)  # Oculta a coluna de data
+        self.treeView.setColumnHidden(1, True)
+        self.treeView.setColumnHidden(2, True)
+        self.treeView.setColumnHidden(3, True)
 
-        # Set the width of the tree view and make it non-resizable
         self.treeView.setMinimumWidth(200)
         self.treeView.setMaximumWidth(200)
 
-        # Console and output
         self.console = QTextEdit()
         self.console.setReadOnly(True)
         self.console.setFont(font)
         self.console.setStyleSheet("background-color: #00091a; color: #c9dcff;")
 
-        # Terminal integrado
         self.terminal = QTextEdit()
         self.terminal.setReadOnly(False)
         self.terminal.setFont(font)
         self.terminal.setStyleSheet("background-color: #00092a; color: #c9dcff;")
         self.terminal.keyPressEvent = self.terminalKeyPressEvent
 
-        # Tab Widget for Output and Terminal
         self.bottomTabWidget = QTabWidget()
         self.bottomTabWidget.addTab(self.console, "Output")
         self.bottomTabWidget.addTab(self.terminal, "Terminal")
@@ -162,27 +149,25 @@ class MainWindow(QMainWindow):
             }
         """)
 
-        # Layout setup
         splitter1 = QSplitter(Qt.Horizontal)
         splitter1.addWidget(self.treeView)
         splitter1.addWidget(self.editor)
         splitter1.setSizes([200, 1000])
-        splitter1.setHandleWidth(0)  # Remove the handle to make it non-resizable
+        splitter1.setHandleWidth(0)
 
         splitter2 = QSplitter(Qt.Vertical)
         splitter2.addWidget(splitter1)
         splitter2.addWidget(self.bottomTabWidget)
         splitter2.setSizes([580, 200])
-        splitter2.setHandleWidth(0)  # Remove the handle to make it non-resizable
+        splitter2.setHandleWidth(0)
 
         self.setCentralWidget(splitter2)
 
         self.setupMenuBar()
 
-        # Auto-save timer
         self.autoSaveTimer = QTimer(self)
         self.autoSaveTimer.timeout.connect(self.autoSave)
-        self.autoSaveTimer.start(30000)  # Auto-save a cada 30 segundos
+        self.autoSaveTimer.start(15000)  # Auto-save a cada 15 segundos
 
     def setupMenuBar(self):
         menubar = self.menuBar()
@@ -278,16 +263,16 @@ class MainWindow(QMainWindow):
         phpCompiler.setStatusTip('Download PHP Compiler')
         phpCompiler.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://www.php.net/downloads')))
 
-        htmlEditor = QAction(QIcon('html.png'),'HTML Editor', self)
-        htmlEditor.setStatusTip('Download HTML Editor')
-        htmlEditor.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://code.visualstudio.com/')))
+        jsCompiler = QAction(QIcon('javascript.png'),'JavaScript', self)
+        jsCompiler.setStatusTip('Download JavaScript Compiler')
+        jsCompiler.triggered.connect(lambda: QDesktopServices.openUrl(QUrl('https://nodejs.org/en/download/package-manager')))
 
         compilerMenu.addAction(pythonCompiler)
         compilerMenu.addAction(javaCompiler)
         compilerMenu.addAction(cppCompiler)
         compilerMenu.addAction(rubyCompiler)
         compilerMenu.addAction(phpCompiler)
-        compilerMenu.addAction(htmlEditor)
+        compilerMenu.addAction(jsCompiler)
 
     def newFile(self):
         text, ok = QInputDialog.getText(self, 'New File', 'Enter file name:')
@@ -375,14 +360,19 @@ class MainWindow(QMainWindow):
 
     def runCode(self):
         if self.currentFile:
-            # Limpar a saída e o terminal antes de executar o código
+            # Clear the output and terminal before executing the code
             self.console.clear()
             self.terminal.clear()
 
             if self.currentFile.endswith('.py'):
                 command = f'python "{self.currentFile}"'
+                self.process = QProcess()
+                self.process.setProcessChannelMode(QProcess.MergedChannels)
+                self.process.readyReadStandardOutput.connect(self.updateConsoleOutput)
+                self.process.readyReadStandardError.connect(self.updateConsoleOutput)
+                self.process.start(command)
+
             elif self.currentFile.endswith('.java'):
-                # Compilation
                 compile_command = f'javac "{self.currentFile}"'
                 self.process = QProcess()
                 self.process.start(compile_command)
@@ -394,7 +384,6 @@ class MainWindow(QMainWindow):
                     self.console.append(compile_error)
                     return
 
-                # Execution
                 class_name = os.path.splitext(os.path.basename(self.currentFile))[0]
                 run_command = f'java -cp "{os.path.dirname(self.currentFile)}" {class_name}'
                 self.process = QProcess()
@@ -402,8 +391,9 @@ class MainWindow(QMainWindow):
                 self.process.readyReadStandardOutput.connect(self.updateConsoleOutput)
                 self.process.readyReadStandardError.connect(self.updateConsoleOutput)
                 self.process.start(run_command)
+
             elif self.currentFile.endswith('.cpp'):
-                executable = self.currentFile[:-4]  # Remove a extensão .cpp
+                executable = self.currentFile[:-4]
                 compile_command = f'g++ "{self.currentFile}" -o "{executable}"'
                 run_command = f'"{executable}"'
                 self.process = QProcess()
@@ -411,7 +401,6 @@ class MainWindow(QMainWindow):
                 self.process.readyReadStandardOutput.connect(self.updateConsoleOutput)
                 self.process.readyReadStandardError.connect(self.updateConsoleOutput)
 
-                # Compilar
                 self.process.start(compile_command)
                 self.process.waitForFinished()
                 compile_output = self.process.readAllStandardOutput().data().decode()
@@ -421,8 +410,8 @@ class MainWindow(QMainWindow):
                     self.console.append(compile_error)
                     return
 
-                # Executar
                 self.process.start(run_command)
+
             elif self.currentFile.endswith('.rb'):
                 command = f'ruby "{self.currentFile}"'
                 self.process = QProcess()
@@ -430,6 +419,7 @@ class MainWindow(QMainWindow):
                 self.process.readyReadStandardOutput.connect(self.updateConsoleOutput)
                 self.process.readyReadStandardError.connect(self.updateConsoleOutput)
                 self.process.start(command)
+
             elif self.currentFile.endswith('.php'):
                 command = f'php "{self.currentFile}"'
                 self.process = QProcess()
@@ -437,9 +427,24 @@ class MainWindow(QMainWindow):
                 self.process.readyReadStandardOutput.connect(self.updateConsoleOutput)
                 self.process.readyReadStandardError.connect(self.updateConsoleOutput)
                 self.process.start(command)
-            elif self.currentFile.endswith('.html') or self.currentFile.endswith('.js'):
-                self.console.append("Cannot run HTML or JavaScript files directly.")
-                return
+
+            elif self.currentFile.endswith('.html'):
+                html_file_path = f'file://{os.path.abspath(self.currentFile)}'
+                webbrowser.open(html_file_path)
+                self.console.append(f"Opened {self.currentFile} in the default web browser.")
+
+            elif self.currentFile.endswith('.js'):
+                # Ensure Node.js is installed and the path is correct
+                command = f'node "{self.currentFile}"'
+                self.process = QProcess()
+                self.process.setProcessChannelMode(QProcess.MergedChannels)
+                self.process.readyReadStandardOutput.connect(self.updateConsoleOutput)
+                self.process.readyReadStandardError.connect(self.updateConsoleOutput)
+                self.process.start(command)
+
+            elif self.currentFile.endswith('.css'):
+                self.console.append("Cannot execute CSS files directly.")
+
             else:
                 self.console.append("Unsupported file format for direct execution.")
                 return
