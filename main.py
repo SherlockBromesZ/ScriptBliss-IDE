@@ -2,9 +2,9 @@ import sys
 import os
 import subprocess
 from PyQt5.QtWidgets import (QMainWindow, QApplication, QAction, QFileDialog, QMessageBox, QLabel,
-                             QTextEdit, QVBoxLayout, QWidget, QSplitter, QTreeView, QFileSystemModel, QInputDialog, QTabWidget)
-from PyQt5.QtGui import QIcon, QColor, QPalette, QFont, QBrush, QFontMetrics, QPixmap, QDesktopServices
-from PyQt5.QtCore import Qt, QDir, QProcess, QModelIndex, QTimer, QUrl
+                             QTextEdit, QVBoxLayout, QWidget, QSplitter, QTreeView, QFileSystemModel, QInputDialog, QTabWidget, QMenu)
+from PyQt5.QtGui import QIcon, QColor, QPalette, QFont, QFontMetrics, QPixmap, QDesktopServices
+from PyQt5.QtCore import Qt, QDir, QProcess, QModelIndex, QTimer, QUrl, QPoint
 from PyQt5.Qsci import (QsciScintilla, QsciLexerPython, QsciLexerJava, QsciLexerHTML, QsciLexerJavaScript,
                         QsciLexerCSS, QsciLexerCPP, QsciLexerRuby)
 
@@ -69,7 +69,7 @@ class MainWindow(QMainWindow):
         # Editor setup
         self.editor = QsciScintilla()
         self.editor.setUtf8(True)
-        self.editor.setCaretForegroundColor(QColor("#ffffff"))
+        self.editor.setCaretForegroundColor(QColor("#00091a"))
 
         # Font
         font = QFont()
@@ -109,6 +109,8 @@ class MainWindow(QMainWindow):
         self.treeView.clicked.connect(self.onFileClicked)
         self.treeView.setHeaderHidden(True)
         self.treeView.setIndentation(10)
+        self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.treeView.customContextMenuRequested.connect(self.showContextMenu)
 
         # Set the width of the tree view and make it non-resizable
         self.treeView.setMinimumWidth(200)
@@ -485,6 +487,65 @@ class MainWindow(QMainWindow):
                 self.terminal.append(output.decode() + error.decode())
         else:
             QTextEdit.keyPressEvent(self.terminal, event)
+
+    def showContextMenu(self, point: QPoint):
+        index = self.treeView.indexAt(point)
+        if index.isValid():
+            contextMenu = QMenu(self)
+            deleteAction = QAction(QIcon('delete.png'), 'Delete', self)
+            deleteAction.triggered.connect(lambda: self.deleteFile(index))
+            renameAction = QAction(QIcon('rename.png'), 'Rename', self)
+            renameAction.triggered.connect(lambda: self.renameFile(index))
+            contextMenu.addAction(deleteAction)
+            contextMenu.addAction(renameAction)
+            contextMenu.exec_(self.treeView.mapToGlobal(point))
+
+    def deleteFile(self, index=None):
+        if index is None:
+            index = self.treeView.currentIndex()
+        filePath = self.fileSystemModel.filePath(index)
+        if QMessageBox.question(self, 'Delete File', f'Are you sure you want to delete "{filePath}"?', QMessageBox.Yes | QMessageBox.No) == QMessageBox.Yes:
+            if os.path.isfile(filePath):
+                os.remove(filePath)
+            elif os.path.isdir(filePath):
+                os.rmdir(filePath)
+            self.treeView.setRootIndex(self.fileSystemModel.index(self.projectPath))
+
+    def renameFile(self, index=None):
+        if index is None:
+            index = self.treeView.currentIndex()
+        
+        filePath = self.fileSystemModel.filePath(index)
+        baseName = os.path.basename(filePath)
+        dirName = os.path.dirname(filePath)
+        
+        while True:
+            newName, ok = QInputDialog.getText(self, 'Rename File', 'Enter new name:', text=baseName)
+            
+            if not ok or not newName:
+                # Usuário cancelou ou não digitou um nome
+                return
+            
+            if newName == baseName:
+                # O nome fornecido é o mesmo que o atual
+                QMessageBox.information(self, "Rename File", "The new name is the same as the current name.")
+                continue
+            
+            newFilePath = os.path.join(dirName, newName)
+            
+            if os.path.exists(newFilePath):
+                # O arquivo com o novo nome já existe
+                QMessageBox.warning(self, "Rename File", "A file with this name already exists. Please choose a different name.")
+            else:
+                # Tudo certo para renomear
+                try:
+                    os.rename(filePath, newFilePath)
+                    # Atualiza a visualização do diretório no tree view
+                    self.treeView.setRootIndex(self.fileSystemModel.index(self.projectPath))
+                    return
+                except OSError as e:
+                    QMessageBox.critical(self, "Rename File", f"Failed to rename file: {e}")
+                    return
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
