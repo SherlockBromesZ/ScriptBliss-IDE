@@ -33,6 +33,8 @@ class CustomFileSystemModel(QFileSystemModel):
             _, ext = os.path.splitext(file_path)
             if ext in self.icon_map:
                 return self.icon_map[ext]
+        elif role == Qt.DisplayRole and index.column() == 0:
+            return os.path.basename(self.filePath(index))
         return super().data(index, role)
 
 class MainWindow(QMainWindow):
@@ -111,6 +113,11 @@ class MainWindow(QMainWindow):
         self.treeView.setIndentation(10)
         self.treeView.setContextMenuPolicy(Qt.CustomContextMenu)
         self.treeView.customContextMenuRequested.connect(self.showContextMenu)
+
+        # Mostrar apenas a coluna do nome do arquivo
+        self.treeView.setColumnHidden(1, True)  # Oculta a coluna de tamanho
+        self.treeView.setColumnHidden(2, True)  # Oculta a coluna de tipo
+        self.treeView.setColumnHidden(3, True)  # Oculta a coluna de data
 
         # Set the width of the tree view and make it non-resizable
         self.treeView.setMinimumWidth(200)
