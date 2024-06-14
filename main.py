@@ -165,10 +165,6 @@ class MainWindow(QMainWindow):
 
         self.setupMenuBar()
 
-        self.autoSaveTimer = QTimer(self)
-        self.autoSaveTimer.timeout.connect(self.autoSave)
-        self.autoSaveTimer.start(15000)  # Auto-save a cada 15 segundos
-
     def setupMenuBar(self):
         menubar = self.menuBar()
         menubar.setStyleSheet("""
@@ -351,12 +347,6 @@ class MainWindow(QMainWindow):
                 f.write(code)
             self.currentFile = fileName
             self.setWindowTitle(f"ScriptBliss - {fileName}")
-
-    def autoSave(self):
-        if self.currentFile:
-            with open(self.currentFile, 'w') as f:
-                code = self.editor.text()
-                f.write(code)
 
     def runCode(self):
         if self.currentFile:
