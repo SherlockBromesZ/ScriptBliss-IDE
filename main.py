@@ -71,6 +71,8 @@ class MainWindow(QMainWindow):
         self.editor = QsciScintilla()
         self.editor.setUtf8(True)  # Ensure the editor is in UTF-8 mode
         self.editor.setCaretForegroundColor(QColor("#00091a"))
+        # Define a largura da tabulação para 4 espaços
+        self.editor.setTabWidth(4) 
 
         font = QFont()
         font.setFamily('Consolas')  # This font is good for a wide range of UTF-8 characters
