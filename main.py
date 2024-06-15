@@ -73,6 +73,8 @@ class MainWindow(QMainWindow):
         self.editor.setCaretForegroundColor(QColor("#00091a"))
         # Define a largura da tabulação para 4 espaços
         self.editor.setTabWidth(4) 
+        # Conecta o evento de tecla pressionada do editor
+        self.editor.keyPressEvent = self.editorKeyPressEvent
 
         font = QFont()
         font.setFamily('Consolas')  # This font is good for a wide range of UTF-8 characters
@@ -166,6 +168,32 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(splitter2)
 
         self.setupMenuBar()
+
+    def editorKeyPressEvent(self, event):
+        super(QsciScintilla, self.editor).keyPressEvent(event)
+
+        # Obter a posição atual do cursor
+        line, index = self.editor.getCursorPosition()
+
+        if event.key() == Qt.Key_ParenLeft:  # (
+            self.editor.insert(")")
+            self.editor.setCursorPosition(line, index)
+
+        elif event.key() == Qt.Key_BracketLeft:  # [
+            self.editor.insert("]")
+            self.editor.setCursorPosition(line, index)
+
+        elif event.key() == Qt.Key_BraceLeft:  # {
+            self.editor.insert("}")
+            self.editor.setCursorPosition(line, index)
+
+        elif event.key() == Qt.Key_QuoteDbl:  # "
+            self.editor.insert('"')
+            self.editor.setCursorPosition(line, index)
+
+        elif event.key() == Qt.Key_Apostrophe:  # '
+            self.editor.insert("'")
+            self.editor.setCursorPosition(line, index)
 
     def setupMenuBar(self):
         menubar = self.menuBar()
