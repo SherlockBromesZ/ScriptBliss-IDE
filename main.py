@@ -337,7 +337,7 @@ class MainWindow(QMainWindow):
                 self.editor.setText(code)
                 self.setWindowTitle(f"ScriptBliss - {fileName}")
 
-            # Set the appropriate lexer based on the file extension
+            # Set the appropriate lexer based on the file extensiondasdasd
             if fileName.endswith('.py'):
                 lexer = QsciLexerPython()
             elif fileName.endswith('.java'):
